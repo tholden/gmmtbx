@@ -14,16 +14,12 @@
 % obj    : The value of the GMM objective function.
 % gradobj: The gradient of the objective function.
 
-function [obj, gradobj] = gobj(theta, popmom, data, W, varargin);
-if nargout>1
-    [pmc, dpmc] = feval(popmom, theta, data, varargin{:});   
-else
-pmc = feval(popmom, theta, data, varargin{:});
-end
+function obj = gobj(theta, popmom, data, W, varargin)
+pmc = popmom( theta, data, varargin{:});
 obs = size(pmc,1);
 g = sum(pmc)';
 obj = (1/obs)*g'*W*g;
-if nargout>1
-    gradobj = 2*g'*W*dpmc;
-end
+% if nargout>1
+%     gradobj = 2*g'*W*dpmc;
+% end
         

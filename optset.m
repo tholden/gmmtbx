@@ -13,14 +13,22 @@
 % Copyright (c) 1997-2002, Paul L. Fackler & Mario J. Miranda
 % paul_fackler@ncsu.edu, miranda.4@osu.edu
 
-function optset(funcname,optname,optvalue)
+function optvalue = optset(funcname,optname,optvalue)
 
-optvar = [lower(funcname) '_options'];   % name of global variable
-optname  = lower(optname);               % name of option field
-if strcmp(optname,'defaults')
-  eval(['clear global  ' optvar])        % clears global variable
-else
-  eval(['global  ' optvar])                % declare global variable
-  eval([optvar '.' optname '=optvalue;'])  % set specified field
+global options_
+
+funcname = lower( funcname );
+optname = lower( optname );
+if ~isstruct( options_ )
+    options_ = struct;
 end
-
+if ~isfield( options_, funcname )
+    options_.( funcname ) = struct;
+end
+FunctionOptions = options_.( funcname );
+FunctionOptions.( optname ) = optvalue;
+if strcmp( optname, 'defaults' )
+    FunctionOptions = rmfield( FunctionOptions, optname );
+end
+options_.( funcname ) = FunctionOptions;
+end

@@ -36,15 +36,21 @@
 % optset('cugmmest', 'bandw', 2); 
 
 
-function obj = cugobj(theta, popmom, data, center, method, bandw, varargin);
+function obj = cugobj(theta, popmom, data, center, method, bandw, varargin)
 
-center    = optget('cugmmest','center',0);
-method    = optget('cugmmest','method','SerUnc');
-bandw     = optget('cugmmest','bandw',0);
+pmc = popmom( theta, data, varargin{:});   % Get the moments and their derivative
 
-[pmc, dpmc] = feval(popmom, theta, data, varargin{:});   % Get the moments and their derivative
-S = longvar(pmc, center, method, bandw);                      % Get the variance of the moments 
-W = inv(S);
+if any( isnan( pmc ) )
+    obj = NaN;
+    return
+end
+S = longvar(pmc, center, method, bandw);   % Get the variance of the moments 
 obs = size(pmc,1);
 g = sum(pmc)';
-obj = (1/obs)*g'*W*g;
+[ V, D ] = eig( S );
+d = diag( D );
+d( abs( d ) < eps ) = 0;
+d( d ~= 0 ) = 1 ./ d( d ~= 0 );
+tmp = g' * V;
+obj = (1/obs)*sum( tmp .* (d') .* tmp );
+obj = log( obj );

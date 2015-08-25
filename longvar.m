@@ -26,8 +26,8 @@
 % bandw  : Returns the value of the bandwidth used (this can help us check 
 %          the value of the "optimal" bandwidth that the program has generated)  
 
-function [S, bandw] = longvar(pm, center, method, bandw);
-[T,q] = size(pm);
+function [S, bandw] = longvar(pm, center, method, bandw)
+[T,~] = size(pm);
 
 % Center data if necessary 
 if center == 1;
@@ -36,22 +36,26 @@ if center == 1;
 end;
 
 % Calculate the optimum bandwidth if it is not given by the user
-if lower(method) == 'hacc_b' & isempty(bandw)
+if strcmpi( method, 'hacc_b' ) && isempty(bandw)
     bandw = optbandw(pm, 'Bartlett');
-elseif lower(method) == 'hacc_p' & isempty(bandw)
+elseif strcmpi( method, 'hacc_p' ) && isempty(bandw)
     bandw = optbandw(pm, 'Parzen');
 end
 
 % Calculate covariance matrix
 switch lower(method)
     case('serunc')
-        S = (1/T)*pm'*pm;
+        S = (1/T)*(pm'*pm);
     case('hacc_b')
         D = kernelest(T, bandw, 'Bartlett');
-        S = (1/T)*pm'*D*pm;
+        tmp = chol( D ) * pm;
+        % S = (1/T)*pm'*D*pm;
+        S = (1/T)*(tmp' * tmp);
     case('hacc_p')
         D = kernelest(T, bandw, 'Parzen');
-        S = (1/T)*pm'*D*pm;
+        tmp = chol( D ) * pm;
+        % S = (1/T)*pm'*D*pm;
+        S = (1/T)*(tmp' * tmp);
     otherwise
        error('Unknown method for moments'' variance.')
 end

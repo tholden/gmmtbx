@@ -19,22 +19,17 @@
 
 function optvalue = optget(funcname,optname,optvalue)
 
-funcname = lower(funcname);
-optvar=[funcname '_options'];
-eval(['global ' optvar])       % declare a global variable
-
-if nargin==1                   % return the whole option structure
-  optvalue=(eval(optvar));
-  return
-end  
-
-optname  = lower(optname);
-% if structure is empty or the named field does not exist
-% set to the value passed
-if isempty(eval(optvar)) | ~isfield(eval(optvar),optname)
-  eval([optvar '.' optname '=optvalue;']); 
-% otherwise return the value in the field
-else
-  optvalue = eval([optvar '.' optname]);
+global options_
+funcname = lower( funcname );
+optname = lower( optname );
+if isstruct( options_ )
+    if isfield( options_, funcname )
+        FunctionOptions = options_.( funcname );
+        if isfield( FunctionOptions, optname )
+            optvalue = FunctionOptions.( optname );
+        end
+    end
 end
+optset(funcname,optname,optvalue);
 
+end

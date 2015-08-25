@@ -64,7 +64,8 @@
 
 %<--------------THE GMM ESTIMATION PROCEDURE STARTS HERE-------------->
 function [theta_final, J_test, probJ, S_final, final_moments,... 
-          final_moments_grad, bandw, var_theta, std_theta,conf_inter] = gmmest(options, data, popmom, startval, We, varargin);
+          final_moments_grad, bandw, var_theta, std_theta,conf_inter] =...
+           gmmest(options, data, popmom, startval, We, lb, ub, nonlcon, varargin);
 
 % SIZE OF DATASET & STARTING VALUES
 [dr,dc]     = size(data);
@@ -74,7 +75,15 @@ function [theta_final, J_test, probJ, S_final, final_moments,...
 if nargin<5, error('The first four inputs (data, popmom, stval, W) must be provided by the user');end
 if stvc~=1, error('The starting values must be a column vector');end
 if stvc>dc, error('The system is un-identified. You must supply at least as many conditions as parameters.');end
-
+if nargin<6
+	lb = [];
+end
+if nargin<7
+	ub = [];
+end
+if nargin<8
+    nonlcon = [];
+end
 % OPTIONS STRUCTURE FOR GMM (DEFAULT VALUES) 
 center    = optget('gmmest','center',0);
 method    = optget('gmmest','method','SerUnc');
@@ -83,15 +92,14 @@ itergmm   = optget('gmmest','itergmm',50);
 tol       = optget('gmmest','tol',1e-006);
 
 % First step estimator
-theta = fminunc('gobj', startval, options, popmom, data, We, varargin{:}); 
+theta = fmincon(@gobj, startval, [], [], [], [], lb, ub, nonlcon, options, popmom, data, We, varargin{:}); 
 
 % Iterative estimation starts here
 for i=2:itergmm
-    pmc = feval(popmom, theta,data, varargin{:}); % Calculate the pmc and their gradient
+    pmc = popmom(theta,data, varargin{:}); % Calculate the pmc and their gradient
     S = longvar(pmc, center, method, bandw);      % Calculate the covariance matrix of the moments
-    invS = S\eye(size(S,1)); % Inverse of S, computed with Gaussian elimination, ...
-    thetanew = fminunc('gobj', theta,...
-        options, popmom, data, invS, varargin{:});   
+    invS = pinv( S ); % Inverse of S, computed with Gaussian elimination, ...
+    thetanew = fmincon(@gobj, startval, [], [], [], [], lb, ub, nonlcon, options, popmom, data, invS, varargin{:});
     if norm(abs(theta - thetanew)) < tol
         result = sprintf('The algorithm converged to a solution. The optimal estimator was achieved in iteration %2.0f .', i);
         disp(result);
@@ -99,21 +107,21 @@ for i=2:itergmm
     end
     theta = thetanew;
 end
-if exist('result','var')==0 & itergmm~=1
+if exist('result','var')==0 && itergmm~=1
     disp('The algorithm didn''t converged to a solution.' );
 end
 
 if itergmm == 1
     thetanew = theta;
-    pmc = feval(popmom, thetanew, data, varargin{:});
+    pmc = popmom( thetanew, data, varargin{:});
     S = longvar(pmc, center, method, bandw);
     disp('One step GMM estimation: Completed');
 end
 
 theta_final = thetanew;
 if nargout>1
-    [pmc,dpmc] = feval(popmom, theta_final,data, varargin{:}); 
-    W_final = S\eye(size(S,1)); % Inverse of S, computed with Gaussian elimination, ...
+    [pmc,dpmc] = popmom( theta_final,data, varargin{:}); 
+    % W_final = S\eye(size(S,1)); % Inverse of S, computed with Gaussian elimination, ...
 	[S_final, bandw] = longvar(pmc, center, method, bandw); 
 	J_test = gobj(theta_final, popmom, data, inv(S_final), varargin{:});
 	pc = size(pmc, 2); 
@@ -125,10 +133,10 @@ if nargout>1
 	var_theta = VAR;
 	std_theta = SD;
 	conf_inter = CI;
-end
 
-% USER NOTIFICATIONS
-if isempty(optget('gmmest', 'bandw')) & lower(optget('gmmest', 'method'))~='serunc'
-    message = sprintf('The optimum bandwidth, has been set to %4.0f', bandw);
-    disp(message);
+	% USER NOTIFICATIONS
+	if isempty(optget('gmmest', 'bandw')) && lower(optget('gmmest', 'method'))~='serunc'
+		message = sprintf('The optimum bandwidth, has been set to %4.0f', bandw);
+		disp(message);
+	end
 end

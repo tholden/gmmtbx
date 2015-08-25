@@ -85,14 +85,16 @@ itergmm   = optget('gmmest','itergmm',50);
 tol       = optget('gmmest','tol',1e-006);
 
 % First step estimator
-theta = cmaes(@(XV) parallel_wrapper( @(X) gobj(X, popmom, data, We, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, We, varargin{:}) ) ), XV ), startval, sigma, options ); 
+[~,~,~,~,~,Best] = cmaes(@(XV) parallel_wrapper( @(X) gobj(X, popmom, data, We, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, We, varargin{:}) ) ), XV ), startval, sigma, options ); 
+theta = Best.x;
 
 % Iterative estimation starts here
 for i=2:itergmm
     pmc = popmom(theta,data, varargin{:}); % Calculate the pmc and their gradient
     S = longvar(pmc, center, method, bandw);      % Calculate the covariance matrix of the moments
     invS = pinv( S ); % Inverse of S, computed with Gaussian elimination, ...
-    thetanew = cmaes(@(XV) parallel_wrapper( @(X) gobj(X, popmom, data, invS, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, invS, varargin{:}) ) ), XV ), startval, sigma, options ); 
+    [~,~,~,~,~,Best] = cmaes(@(XV) parallel_wrapper( @(X) gobj(X, popmom, data, invS, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, invS, varargin{:}) ) ), XV ), startval, sigma, options ); 
+    thetanew = Best.x;
     if norm(abs(theta - thetanew)) < tol
         result = sprintf('The algorithm converged to a solution. The optimal estimator was achieved in iteration %2.0f .', i);
         disp(result);

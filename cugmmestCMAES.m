@@ -79,7 +79,8 @@ method    = optget('gmmest','method','SerUnc');
 bandw     = optget('gmmest','bandw',0);
 
 % CU estimator
-theta_final = cmaes(@(XV) parallel_wrapper( @(X) cugobj(X, popmom, data, center, method, bandw, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, center, method, bandw, varargin{:}) ) ), XV ), startval, sigma, options ); 
+[~,~,~,~,~,Best] = cmaes(@(XV) parallel_wrapper( @(X) cugobj(X, popmom, data, center, method, bandw, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, center, method, bandw, varargin{:}) ) ), XV ), startval, sigma, options ); 
+theta_final = Best.x;
 disp('The CU-GMM estimates have been computed.' );
 if nargout > 1
 	[pmc,dpmc] = popmom( theta_final,data, varargin{:}); 

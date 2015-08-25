@@ -65,7 +65,7 @@
 %<--------------THE GMM ESTIMATION PROCEDURE STARTS HERE-------------->
 function [theta_final, J_test, probJ, S_final, final_moments,... 
           final_moments_grad, bandw, var_theta, std_theta,conf_inter] =...
-           gmmest(options, data, popmom, startval, We, lb, ub, nonlcon, varargin);
+           gmmest(options, data, popmom, startval, We, lb, ub, nonlcon, varargin)
 
 % SIZE OF DATASET & STARTING VALUES
 [dr,dc]     = size(data);

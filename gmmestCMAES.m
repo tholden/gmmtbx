@@ -93,6 +93,7 @@ for i=2:itergmm
     pmc = popmom(theta,data, varargin{:}); % Calculate the pmc and their gradient
     S = longvar(pmc, center, method, bandw);      % Calculate the covariance matrix of the moments
     invS = pinv( S ); % Inverse of S, computed with Gaussian elimination, ...
+	options.Resume = 0;
     [~,~,~,~,~,Best] = cmaes(@(XV) parallel_wrapper( @(X) gobj(X, popmom, data, invS, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, invS, varargin{:}) ) ), XV ), startval, sigma, options ); 
     thetanew = Best.x;
     if norm(abs(theta - thetanew)) < tol

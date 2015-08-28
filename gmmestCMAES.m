@@ -85,7 +85,14 @@ itergmm   = optget('gmmest','itergmm',50);
 tol       = optget('gmmest','tol',1e-006);
 
 % First step estimator
-[~,~,~,~,~,Best] = cmaes(@(XV) parallel_wrapper( @(X) gobj(X, popmom, data, We, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, We, varargin{:}) ) ), XV ), startval, sigma, options ); 
+if isempty( We )
+    pmc = popmom(startval,data, varargin{:}); % Calculate the pmc and their gradient
+    S = longvar(pmc, center, method, bandw);      % Calculate the covariance matrix of the moments
+    invS = pinv( S ); % Inverse of S, computed with Gaussian elimination, ...
+    [~,~,~,~,~,Best] = cmaes(@(XV) parallel_wrapper( @(X) gobj(X, popmom, data, invS, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, invS, varargin{:}) ) ), XV ), startval, sigma, options ); 
+else
+    [~,~,~,~,~,Best] = cmaes(@(XV) parallel_wrapper( @(X) gobj(X, popmom, data, We, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, We, varargin{:}) ) ), XV ), startval, sigma, options ); 
+end
 theta = Best.x;
 
 % Iterative estimation starts here
@@ -93,7 +100,7 @@ for i=2:itergmm
     pmc = popmom(theta,data, varargin{:}); % Calculate the pmc and their gradient
     S = longvar(pmc, center, method, bandw);      % Calculate the covariance matrix of the moments
     invS = pinv( S ); % Inverse of S, computed with Gaussian elimination, ...
-	options.Resume = 0;
+    options.Resume = 0;
     [~,~,~,~,~,Best] = cmaes(@(XV) parallel_wrapper( @(X) gobj(X, popmom, data, invS, varargin{:}) + 1e12 * sum( max( 0, nonlcon(X, popmom, data, invS, varargin{:}) ) ), XV ), startval, sigma, options ); 
     thetanew = Best.x;
     if norm(abs(theta - thetanew)) < tol

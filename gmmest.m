@@ -92,7 +92,14 @@ itergmm   = optget('gmmest','itergmm',50);
 tol       = optget('gmmest','tol',1e-006);
 
 % First step estimator
-theta = fmincon(@gobj, startval, [], [], [], [], lb, ub, nonlcon, options, popmom, data, We, varargin{:}); 
+if isempty( We )
+    pmc = popmom(startval,data, varargin{:}); % Calculate the pmc and their gradient
+    S = longvar(pmc, center, method, bandw);      % Calculate the covariance matrix of the moments
+    invS = pinv( S ); % Inverse of S, computed with Gaussian elimination, ...
+    theta = fmincon(@gobj, startval, [], [], [], [], lb, ub, nonlcon, options, popmom, data, invS, varargin{:});
+else
+    theta = fmincon(@gobj, startval, [], [], [], [], lb, ub, nonlcon, options, popmom, data, We, varargin{:}); 
+end
 
 % Iterative estimation starts here
 for i=2:itergmm
